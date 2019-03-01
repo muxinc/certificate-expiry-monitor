@@ -14,13 +14,14 @@ import (
 
 // CertExpiryMonitor periodically checks certificate expiry times
 type CertExpiryMonitor struct {
-	Logger           *logrus.Logger
-	KubernetesClient *kubernetes.Clientset
-	PollingFrequency time.Duration
-	Namespaces       []string
-	Labels           string
-	Hostnames        []string
-	Port             int
+	Logger             *logrus.Logger
+	KubernetesClient   *kubernetes.Clientset
+	PollingFrequency   time.Duration
+	Namespaces         []string
+	Labels             string
+	Hostnames          []string
+	Port               int
+	InsecureSkipVerify bool
 }
 
 // Run the monitor until instructed to stop
@@ -70,7 +71,7 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 	defer wg.Done()
 
 	currentTime := time.Now()
-	tlsConfig := tls.Config{InsecureSkipVerify: true}
+	tlsConfig := tls.Config{InsecureSkipVerify: m.InsecureSkipVerify}
 
 	// iterate over hostnames that need to be checked, setting the hostname in the TLS connection config for SNI
 	for _, hostname := range m.Hostnames {

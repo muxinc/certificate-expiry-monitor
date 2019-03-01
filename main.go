@@ -24,15 +24,16 @@ import (
 )
 
 var (
-	kubeconfigPath   = flag.String("kubeconfig", "", "Path to kubeconfig file if running outside the Kubernetes cluster")
-	pollingFrequency = flag.Duration("frequency", time.Minute, "Frequency at which the certificate expiry times are polled")
-	namespaces       = flag.String("namespaces", "default", "Comma-separated Kubernetes namespaces to query")
-	labels           = flag.String("labels", "", "Label selector that identifies pods to query")
-	hostnames        = flag.String("hostnames", "", "Comma-separated SNI hostnames to query")
-	port             = flag.Int("port", 443, "TCP port to connect to each pod on")
-	loglevel         = flag.String("loglevel", "error", "Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic)")
-	logFormat        = flag.String("logformat", "text", "Log format (text or json)")
-	metricsPort      = flag.Int("metricsPort", 8888, "TCP port that the Prometheus metrics listener should use")
+	kubeconfigPath     = flag.String("kubeconfig", "", "Path to kubeconfig file if running outside the Kubernetes cluster")
+	pollingFrequency   = flag.Duration("frequency", time.Minute, "Frequency at which the certificate expiry times are polled")
+	namespaces         = flag.String("namespaces", "default", "Comma-separated Kubernetes namespaces to query")
+	labels             = flag.String("labels", "", "Label selector that identifies pods to query")
+	hostnames          = flag.String("hostnames", "", "Comma-separated SNI hostnames to query")
+	port               = flag.Int("port", 443, "TCP port to connect to each pod on")
+	loglevel           = flag.String("loglevel", "error", "Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic)")
+	logFormat          = flag.String("logformat", "text", "Log format (text or json)")
+	metricsPort        = flag.Int("metricsPort", 8888, "TCP port that the Prometheus metrics listener should use")
+	insecureSkipVerify = flag.Bool("insecure", true, "If true, then the InsecureSkipVerify option will be used with the TLS connection, and the remote certificate and hostname will be trusted without verification")
 )
 
 func main() {
@@ -54,13 +55,14 @@ func main() {
 
 	// start monitor
 	monitor := &monitor.CertExpiryMonitor{
-		Logger:           logger,
-		KubernetesClient: kubeClient,
-		PollingFrequency: *pollingFrequency,
-		Namespaces:       strings.Split(*namespaces, ","),
-		Labels:           *labels,
-		Hostnames:        strings.Split(*hostnames, ","),
-		Port:             *port,
+		Logger:             logger,
+		KubernetesClient:   kubeClient,
+		PollingFrequency:   *pollingFrequency,
+		Namespaces:         strings.Split(*namespaces, ","),
+		Labels:             *labels,
+		Hostnames:          strings.Split(*hostnames, ","),
+		Port:               *port,
+		InsecureSkipVerify: *insecureSkipVerify,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
