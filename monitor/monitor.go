@@ -94,29 +94,27 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 		// iterate over certificates returned by pod, looking for once that matches the hostname we're verifying
 		certFound := false
 		for _, cert := range conn.ConnectionState().PeerCertificates {
-			if cert.VerifyHostname(hostname) == nil {
-				certFound = true
-				certValid := true
-				certLogger := logger.WithField("subject", cert.Subject)
-				certLogger.Debugf("Checking certificate: Not-Before=%v Not-After=%v", cert.NotBefore, cert.NotAfter)
-				if cert.NotAfter.Before(currentTime) {
-					certValid = false
-					certLogger.Warnf("Certificate has expired: Not-After=%v", cert.NotAfter)
-					certificateExpired.WithLabelValues(namespace, pod, hostname).Inc()
-				}
-				if cert.NotBefore.After(currentTime) {
-					certValid = false
-					certLogger.Warnf("Certificate is not yet valid: Not-Before=%v", cert.NotBefore)
-					certificateNotYetValid.WithLabelValues(namespace, pod, hostname).Inc()
-				}
-				if certValid {
-					certLogger.Debugf("Certificate is valid")
-					certificateValid.WithLabelValues(namespace, pod, hostname).Inc()
-				}
-				certificateSecondsSinceIssued.WithLabelValues(namespace, pod, hostname).Set(currentTime.Sub(cert.NotBefore).Seconds())
-				certificateSecondsUntilExpires.WithLabelValues(namespace, pod, hostname).Set(cert.NotAfter.Sub(currentTime).Seconds())
-				break
+			certLogger := logger.WithField("subject", cert.Subject)
+			if err := cert.VerifyHostname(hostname); err != nil {
+				certLogger.Warnf("Certificate was not valid for hostname: %v", err)
+				continue
 			}
+
+			certFound = true
+			certLogger.Debugf("Checking certificate: Not-Before=%v Not-After=%v", cert.NotBefore, cert.NotAfter)
+			if cert.NotAfter.Before(currentTime) {
+				certLogger.Warnf("Certificate has expired: Not-After=%v", cert.NotAfter)
+				certificateExpired.WithLabelValues(namespace, pod, hostname).Set(1)
+			} else if cert.NotBefore.After(currentTime) {
+				certLogger.Warnf("Certificate is not yet valid: Not-Before=%v", cert.NotBefore)
+				certificateNotYetValid.WithLabelValues(namespace, pod, hostname).Set(1)
+			} else {
+				certLogger.Debugf("Certificate is valid")
+				certificateValid.WithLabelValues(namespace, pod, hostname).Set(1)
+			}
+			certificateSecondsSinceIssued.WithLabelValues(namespace, pod, hostname).Set(currentTime.Sub(cert.NotBefore).Seconds())
+			certificateSecondsUntilExpires.WithLabelValues(namespace, pod, hostname).Set(cert.NotAfter.Sub(currentTime).Seconds())
+			break
 		}
 
 		if !certFound {

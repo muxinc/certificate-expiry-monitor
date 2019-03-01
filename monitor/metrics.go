@@ -29,26 +29,26 @@ var (
 		},
 		[]string{"namespace", "pod", "hostname"},
 	)
-	certificateExpired = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	certificateExpired = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_expired",
+			Name:      "certificate_is_expired",
 			Help:      "Number of times an expired certificate was found",
 		},
 		[]string{"namespace", "pod", "hostname"},
 	)
-	certificateNotYetValid = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	certificateNotYetValid = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_not_yet_valid",
+			Name:      "certificate_is_not_yet_valid",
 			Help:      "Number of times a certificate was found where it isn't valid yet",
 		},
 		[]string{"namespace", "pod", "hostname"},
 	)
-	certificateValid = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	certificateValid = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_valid",
+			Name:      "certificate_is_valid",
 			Help:      "Number of times a certificate was found to be valid",
 		},
 		[]string{"namespace", "pod", "hostname"},
