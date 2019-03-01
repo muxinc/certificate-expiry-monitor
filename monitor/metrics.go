@@ -7,7 +7,7 @@ import (
 var (
 	matchingPods = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "matching_pods",
 			Help:      "Number of pods that match the label filter in a namespace",
 		},
@@ -15,7 +15,7 @@ var (
 	)
 	tlsOpenConnectionError = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "tls_open_connection_error",
 			Help:      "Number of times an error was encountered while opening a TLS connection to a pod",
 		},
@@ -23,7 +23,7 @@ var (
 	)
 	tlsCloseConnectionError = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "tls_close_connection_error",
 			Help:      "Number of times an error was encountered while closing a TLS connection to a pod",
 		},
@@ -31,7 +31,7 @@ var (
 	)
 	certificateExpired = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "certificate_expired",
 			Help:      "Number of times an expired certificate was found",
 		},
@@ -39,7 +39,7 @@ var (
 	)
 	certificateNotYetValid = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "certificate_not_yet_valid",
 			Help:      "Number of times a certificate was found where it isn't valid yet",
 		},
@@ -47,7 +47,7 @@ var (
 	)
 	certificateValid = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "certificate_valid",
 			Help:      "Number of times a certificate was found to be valid",
 		},
@@ -55,7 +55,7 @@ var (
 	)
 	certificateNotFoundForHostname = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "certificate_not_found",
 			Help:      "Number of times a certificate was not found for a hostname",
 		},
@@ -63,7 +63,7 @@ var (
 	)
 	certificateSecondsSinceIssued = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "seconds_since_cert_issued",
 			Help:      "Secods since the certificate was issued",
 		},
@@ -71,7 +71,7 @@ var (
 	)
 	certificateSecondsUntilExpires = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "expirymonitor",
+			Namespace: "certificate_expiry_monitor",
 			Name:      "seconds_until_cert_expires",
 			Help:      "Seconds until the certificate expires",
 		},

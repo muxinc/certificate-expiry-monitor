@@ -15,6 +15,6 @@ RUN CGO_ENABLED=0 GOOS=linux go install -v \
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-COPY --from=0 /go/bin/certificate-expiry-monitor /bin/certificate-expiry-monitor
+COPY --from=0 /go/bin/certificate-expiry-monitor /app
 
-CMD ["/bin/certificate-expiry-monitor"]
+CMD ["/app"]
