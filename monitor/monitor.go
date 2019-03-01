@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+const tlsConnectionTimeout = 5 * time.Second
 
 // CertExpiryMonitor periodically checks certificate expiry times
 type CertExpiryMonitor struct {
@@ -79,7 +82,9 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 
 		// connect to the pod over TLS
 		tlsConfig.ServerName = hostname
-		conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", podIP, m.Port), &tlsConfig)
+		dialer := new(net.Dialer)
+		dialer.Timeout = tlsConnectionTimeout
+		conn, err := tls.DialWithDialer(dialer, "tcp", fmt.Sprintf("%s:%d", podIP, m.Port), &tlsConfig)
 		if err != nil {
 			tlsOpenConnectionError.WithLabelValues(namespace, pod, hostname).Inc()
 			logger.Errorf("Error connecting to pod to check certificates: %v", err)
