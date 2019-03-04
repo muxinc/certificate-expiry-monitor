@@ -94,14 +94,13 @@ A Prometheus endpoint is available at `/metrics` on TCP port `:8888` (customizab
 | `ns` | Namespace of the pod that was queried |
 | `pod` | Pod being queried for TLS certificates |
 | `domain` | Domain being verified against TLS certificates |
+| `status` | Certificate is either `valid`, `expired`, `soon` (not yet valid), or `notfound` |
 
 ### Gauges
 | Name  | Labels | Description  |
 |---|---|---|
 | `certificate_expiry_monitor_matching_pods` | `ns` | Number of pods that match the label filter in a namespace  |
-| `certificate_expiry_monitor_certificate_is_expired`  | `ns`, `pod`, `domain` | Number of expired certificates  |
-| `certificate_expiry_monitor_certificate_is_not_yet_valid`  | `ns`, `pod`, `domain` | Number of certificates that are not yet valid  |
-| `certificate_expiry_monitor_certificate_is_valid`  | `ns`, `pod`, `domain` | Number of valid certificates  |
+| `certificate_expiry_monitor_certificate`  | `ns`, `pod`, `domain`, `status` | Number of pods with a certificate in a given status for the domain |
 | `certificate_expiry_monitor_seconds_since_cert_issued`  | `ns`, `pod`, `domain` | Seconds since the certificate was issued  |
 | `certificate_expiry_monitor_seconds_until_cert_expires`  | `ns`, `pod`, `domain` | Seconds until the certificate expires  |
 
@@ -110,7 +109,6 @@ A Prometheus endpoint is available at `/metrics` on TCP port `:8888` (customizab
 |---|---|---|
 | `certificate_expiry_monitor_tls_open_connection_error`  | `ns`, `pod`, `domain` | Number of times an error occurred while opening a TLS connection to a pod |
 | `certificate_expiry_monitor_tls_close_connection_error`  | `ns`, `pod`, `domain` | Number of times an error occurred while closing a TLS connection to a pod |
-| `certificate_expiry_monitor_certificate_not_found`  | `ns`, `pod`, `domain` | Number of times an applicable TLS certificate could not be found for a pod and hostname combination |
 
 ## Healthcheck
 A simple healthcheck is available at `/healthz` on the TCP port `:8888` (customizable with `metricsPort`):
