@@ -28,7 +28,7 @@ var (
 	pollingFrequency   = flag.Duration("frequency", time.Minute, "Frequency at which the certificate expiry times are polled")
 	namespaces         = flag.String("namespaces", "default", "Comma-separated Kubernetes namespaces to query")
 	labels             = flag.String("labels", "", "Label selector that identifies pods to query")
-	hostnames          = flag.String("hostnames", "", "Comma-separated SNI hostnames to query")
+	domains            = flag.String("domains", "", "Comma-separated SNI domains to query")
 	port               = flag.Int("port", 443, "TCP port to connect to each pod on")
 	loglevel           = flag.String("loglevel", "error", "Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic)")
 	logFormat          = flag.String("logformat", "text", "Log format (text or json)")
@@ -60,7 +60,7 @@ func main() {
 		PollingFrequency:   *pollingFrequency,
 		Namespaces:         strings.Split(*namespaces, ","),
 		Labels:             *labels,
-		Hostnames:          strings.Split(*hostnames, ","),
+		Domains:            strings.Split(*domains, ","),
 		Port:               *port,
 		InsecureSkipVerify: *insecureSkipVerify,
 	}
