@@ -13,7 +13,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const tlsConnectionTimeout = 5 * time.Second
+const (
+	tlsConnectionTimeout = 5 * time.Second
+
+	validLabel    = "valid"
+	expiredLabel  = "expired"
+	soonLabel     = "soon"
+	notFoundLabel = "notfound"
+)
 
 // CertExpiryMonitor periodically checks certificate expiry times
 type CertExpiryMonitor struct {
@@ -92,6 +99,10 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 		}
 
 		// iterate over certificates returned by pod, looking for matches against the domain we're verifying
+		certificateStatus.WithLabelValues(namespace, pod, domain, expiredLabel).Set(0)
+		certificateStatus.WithLabelValues(namespace, pod, domain, validLabel).Set(0)
+		certificateStatus.WithLabelValues(namespace, pod, domain, soonLabel).Set(0)
+		certificateStatus.WithLabelValues(namespace, pod, domain, validLabel).Set(0)
 		certFound := false
 		for _, cert := range conn.ConnectionState().PeerCertificates {
 			certLogger := logger.WithField("subject", cert.Subject)
@@ -104,13 +115,13 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 			certLogger.Debugf("Checking certificate: Not-Before=%v Not-After=%v", cert.NotBefore, cert.NotAfter)
 			if cert.NotAfter.Before(currentTime) {
 				certLogger.Warnf("Certificate has expired: Not-After=%v", cert.NotAfter)
-				certificateExpired.WithLabelValues(namespace, pod, domain).Set(1)
+				certificateStatus.WithLabelValues(namespace, pod, domain, expiredLabel).Set(1)
 			} else if cert.NotBefore.After(currentTime) {
 				certLogger.Warnf("Certificate is not yet valid: Not-Before=%v", cert.NotBefore)
-				certificateNotYetValid.WithLabelValues(namespace, pod, domain).Set(1)
+				certificateStatus.WithLabelValues(namespace, pod, domain, soonLabel).Set(1)
 			} else {
 				certLogger.Debugf("Certificate is valid")
-				certificateValid.WithLabelValues(namespace, pod, domain).Set(1)
+				certificateStatus.WithLabelValues(namespace, pod, domain, validLabel).Set(1)
 			}
 			certificateSecondsSinceIssued.WithLabelValues(namespace, pod, domain).Set(currentTime.Sub(cert.NotBefore).Seconds())
 			certificateSecondsUntilExpires.WithLabelValues(namespace, pod, domain).Set(cert.NotAfter.Sub(currentTime).Seconds())
@@ -119,7 +130,7 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 
 		if !certFound {
 			logger.Warn("No matching certificates found for domain")
-			certificateNotFoundForDomain.WithLabelValues(namespace, pod, domain).Inc()
+			certificateStatus.WithLabelValues(namespace, pod, domain, notFoundLabel).Set(1)
 		}
 		if err := conn.Close(); err != nil {
 			tlsCloseConnectionError.WithLabelValues(namespace, pod, domain).Inc()

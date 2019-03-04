@@ -29,37 +29,13 @@ var (
 		},
 		[]string{"ns", "pod", "domain"},
 	)
-	certificateExpired = prometheus.NewGaugeVec(
+	certificateStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_is_expired",
-			Help:      "Number of times an expired certificate was found",
+			Name:      "certificate",
+			Help:      "Number of instances of pods & domains in a given status",
 		},
-		[]string{"ns", "pod", "domain"},
-	)
-	certificateNotYetValid = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_is_not_yet_valid",
-			Help:      "Number of times a certificate was found where it isn't valid yet",
-		},
-		[]string{"ns", "pod", "domain"},
-	)
-	certificateValid = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_is_valid",
-			Help:      "Number of times a certificate was found to be valid",
-		},
-		[]string{"ns", "pod", "domain"},
-	)
-	certificateNotFoundForDomain = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "certificate_expiry_monitor",
-			Name:      "certificate_not_found",
-			Help:      "Number of times a certificate was not found for a domain",
-		},
-		[]string{"ns", "pod", "domain"},
+		[]string{"ns", "pod", "domain", "status"},
 	)
 	certificateSecondsSinceIssued = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -83,10 +59,7 @@ func init() {
 	prometheus.MustRegister(matchingPods)
 	prometheus.MustRegister(tlsOpenConnectionError)
 	prometheus.MustRegister(tlsCloseConnectionError)
-	prometheus.MustRegister(certificateExpired)
-	prometheus.MustRegister(certificateNotYetValid)
-	prometheus.MustRegister(certificateValid)
-	prometheus.MustRegister(certificateNotFoundForDomain)
+	prometheus.MustRegister(certificateStatus)
 	prometheus.MustRegister(certificateSecondsSinceIssued)
 	prometheus.MustRegister(certificateSecondsUntilExpires)
 }
