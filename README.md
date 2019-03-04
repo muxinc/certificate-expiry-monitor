@@ -12,10 +12,10 @@ Run the Docker image using the executable at `/app`:
 ```
 → docker run muxinc/certificate-expiry-monitor:latest /app --help
 Usage of /app:
+  -domains string
+    	Comma-separated SNI domains to query
   -frequency duration
     	Frequency at which the certificate expiry times are polled (default 1m0s)
-  -hostnames string
-    	Comma-separated SNI hostnames to query
   -insecure
     	If true, then the InsecureSkipVerify option will be used with the TLS connection, and the remote certificate and hostname will be trusted without verification (default true)
   -kubeconfig string
@@ -36,7 +36,7 @@ Usage of /app:
 ```
 
 ### Kubernetes Manifest
-You're probably going to want to run the certificate-expiry monitor in a Kubernetes cluster. The following manifest shows how you might monitor a set of ingress pods matching the label `k8s-app=my-ingresses` in the `default` namespace for the `foobar.example.com` certificate hostname:
+You're probably going to want to run the certificate-expiry monitor in a Kubernetes cluster. The following manifest shows how you might monitor a set of ingress pods matching the label `k8s-app=my-ingresses` in the `default` namespace for the `foobar.example.com` domain:
 
 ```yaml
 apiVersion: extensions/v1beta1
@@ -65,7 +65,7 @@ spec:
         - default
         - -frequency
         - 1m
-        - -hostnames
+        - -domains
         - foobar.example.com
         image: muxinc/certificate-expiry-monitor:latest
         imagePullPolicy: Always
@@ -86,24 +86,31 @@ spec:
 ```
 
 ## Monitoring
-A Prometheus endpoint is available at `/metrics` on TCP port `:8888` (customizable with `metricsPort`). 
+A Prometheus endpoint is available at `/metrics` on TCP port `:8888` (customizable with `metricsPort`).
+
+### Labels
+| Name  | Description  |
+|---|---|
+| `ns` | Namespace of the pod that was queried |
+| `pod` | Pod being queried for TLS certificates |
+| `domain` | Domain being verified against TLS certificates |
 
 ### Gauges
-| Name  | Description  |
-|---|---|
-| `certificate_expiry_monitor_matching_pods`  | Number of pods that match the label filter in a namespace  |
-| `certificate_expiry_monitor_certificate_is_expired`  | Number of expired certificates  |
-| `certificate_expiry_monitor_certificate_is_not_yet_valid`  | Number of certificates that are not yet valid  |
-| `certificate_expiry_monitor_certificate_is_valid`  | Number of valid certificates  |
-| `certificate_expiry_monitor_seconds_since_cert_issued`  | Seconds since the certificate was issued  |
-| `certificate_expiry_monitor_seconds_until_cert_expires`  | Seconds until the certificate expires  |
+| Name  | Labels | Description  |
+|---|---|---|
+| `certificate_expiry_monitor_matching_pods` | `ns` | Number of pods that match the label filter in a namespace  |
+| `certificate_expiry_monitor_certificate_is_expired`  | `ns`, `pod`, `domain` | Number of expired certificates  |
+| `certificate_expiry_monitor_certificate_is_not_yet_valid`  | `ns`, `pod`, `domain` | Number of certificates that are not yet valid  |
+| `certificate_expiry_monitor_certificate_is_valid`  | `ns`, `pod`, `domain` | Number of valid certificates  |
+| `certificate_expiry_monitor_seconds_since_cert_issued`  | `ns`, `pod`, `domain` | Seconds since the certificate was issued  |
+| `certificate_expiry_monitor_seconds_until_cert_expires`  | `ns`, `pod`, `domain` | Seconds until the certificate expires  |
 
 ### Counters
-| Name  | Description  |
-|---|---|
-| `certificate_expiry_monitor_tls_open_connection_error`  | Number of times an error occurred while opening a TLS connection to a pod |
-| `certificate_expiry_monitor_tls_close_connection_error`  | Number of times an error occurred while closing a TLS connection to a pod |
-| `certificate_expiry_monitor_certificate_not_found`  | Number of times an applicable TLS certificate could not be found for a pod and hostname combination |
+| Name  | Labels | Description  |
+|---|---|---|
+| `certificate_expiry_monitor_tls_open_connection_error`  | `ns`, `pod`, `domain` | Number of times an error occurred while opening a TLS connection to a pod |
+| `certificate_expiry_monitor_tls_close_connection_error`  | `ns`, `pod`, `domain` | Number of times an error occurred while closing a TLS connection to a pod |
+| `certificate_expiry_monitor_certificate_not_found`  | `ns`, `pod`, `domain` | Number of times an applicable TLS certificate could not be found for a pod and hostname combination |
 
 ## Healthcheck
 A simple healthcheck is available at `/healthz` on the TCP port `:8888` (customizable with `metricsPort`):

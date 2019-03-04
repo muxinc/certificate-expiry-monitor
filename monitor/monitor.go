@@ -22,7 +22,7 @@ type CertExpiryMonitor struct {
 	PollingFrequency   time.Duration
 	Namespaces         []string
 	Labels             string
-	Hostnames          []string
+	Domains            []string
 	Port               int
 	InsecureSkipVerify bool
 }
@@ -76,27 +76,27 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 	currentTime := time.Now()
 	tlsConfig := tls.Config{InsecureSkipVerify: m.InsecureSkipVerify}
 
-	// iterate over hostnames that need to be checked, setting the hostname in the TLS connection config for SNI
-	for _, hostname := range m.Hostnames {
-		logger := m.Logger.WithFields(logrus.Fields{"ns": namespace, "pod": pod, "hostname": hostname})
+	// iterate over domains that need to be checked, setting the domain in the TLS connection config for SNI
+	for _, domain := range m.Domains {
+		logger := m.Logger.WithFields(logrus.Fields{"ns": namespace, "pod": pod, "domain": domain})
 
 		// connect to the pod over TLS
-		tlsConfig.ServerName = hostname
+		tlsConfig.ServerName = domain
 		dialer := new(net.Dialer)
 		dialer.Timeout = tlsConnectionTimeout
 		conn, err := tls.DialWithDialer(dialer, "tcp", fmt.Sprintf("%s:%d", podIP, m.Port), &tlsConfig)
 		if err != nil {
-			tlsOpenConnectionError.WithLabelValues(namespace, pod, hostname).Inc()
+			tlsOpenConnectionError.WithLabelValues(namespace, pod, domain).Inc()
 			logger.Errorf("Error connecting to pod to check certificates: %v", err)
 			return
 		}
 
-		// iterate over certificates returned by pod, looking for once that matches the hostname we're verifying
+		// iterate over certificates returned by pod, looking for matches against the domain we're verifying
 		certFound := false
 		for _, cert := range conn.ConnectionState().PeerCertificates {
 			certLogger := logger.WithField("subject", cert.Subject)
-			if err := cert.VerifyHostname(hostname); err != nil {
-				certLogger.Warnf("Certificate was not valid for hostname: %v", err)
+			if err := cert.VerifyHostname(domain); err != nil {
+				certLogger.Warnf("Certificate was not valid for domain: %v", err)
 				continue
 			}
 
@@ -104,25 +104,25 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 			certLogger.Debugf("Checking certificate: Not-Before=%v Not-After=%v", cert.NotBefore, cert.NotAfter)
 			if cert.NotAfter.Before(currentTime) {
 				certLogger.Warnf("Certificate has expired: Not-After=%v", cert.NotAfter)
-				certificateExpired.WithLabelValues(namespace, pod, hostname).Set(1)
+				certificateExpired.WithLabelValues(namespace, pod, domain).Set(1)
 			} else if cert.NotBefore.After(currentTime) {
 				certLogger.Warnf("Certificate is not yet valid: Not-Before=%v", cert.NotBefore)
-				certificateNotYetValid.WithLabelValues(namespace, pod, hostname).Set(1)
+				certificateNotYetValid.WithLabelValues(namespace, pod, domain).Set(1)
 			} else {
 				certLogger.Debugf("Certificate is valid")
-				certificateValid.WithLabelValues(namespace, pod, hostname).Set(1)
+				certificateValid.WithLabelValues(namespace, pod, domain).Set(1)
 			}
-			certificateSecondsSinceIssued.WithLabelValues(namespace, pod, hostname).Set(currentTime.Sub(cert.NotBefore).Seconds())
-			certificateSecondsUntilExpires.WithLabelValues(namespace, pod, hostname).Set(cert.NotAfter.Sub(currentTime).Seconds())
+			certificateSecondsSinceIssued.WithLabelValues(namespace, pod, domain).Set(currentTime.Sub(cert.NotBefore).Seconds())
+			certificateSecondsUntilExpires.WithLabelValues(namespace, pod, domain).Set(cert.NotAfter.Sub(currentTime).Seconds())
 			break
 		}
 
 		if !certFound {
-			logger.Warn("No matching certificates found for hostname")
-			certificateNotFoundForHostname.WithLabelValues(namespace, pod, hostname).Inc()
+			logger.Warn("No matching certificates found for domain")
+			certificateNotFoundForDomain.WithLabelValues(namespace, pod, domain).Inc()
 		}
 		if err := conn.Close(); err != nil {
-			tlsCloseConnectionError.WithLabelValues(namespace, pod, hostname).Inc()
+			tlsCloseConnectionError.WithLabelValues(namespace, pod, domain).Inc()
 			logger.Errorf("Error closing TLS connection after checking certificates: %v", err)
 		}
 	}
