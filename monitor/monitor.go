@@ -102,7 +102,7 @@ func (m *CertExpiryMonitor) checkCertificates(wg *sync.WaitGroup, namespace, pod
 		certificateStatus.WithLabelValues(namespace, pod, domain, expiredLabel).Set(0)
 		certificateStatus.WithLabelValues(namespace, pod, domain, validLabel).Set(0)
 		certificateStatus.WithLabelValues(namespace, pod, domain, soonLabel).Set(0)
-		certificateStatus.WithLabelValues(namespace, pod, domain, validLabel).Set(0)
+		certificateStatus.WithLabelValues(namespace, pod, domain, notFoundLabel).Set(0)
 		certFound := false
 		for _, cert := range conn.ConnectionState().PeerCertificates {
 			certLogger := logger.WithField("subject", cert.Subject)
