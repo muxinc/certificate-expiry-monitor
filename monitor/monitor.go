@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"regexp"
 	"sync"
 	"time"
 
@@ -39,6 +40,9 @@ type CertExpiryMonitor struct {
 func containsDomain(l []string, domain string) bool {
 	for _, d := range l {
 		if d == domain {
+			return true
+		}
+		if regexp.MustCompile(d).MatchString(domain) {
 			return true
 		}
 	}
