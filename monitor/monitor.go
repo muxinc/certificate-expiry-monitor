@@ -42,8 +42,11 @@ func containsDomain(l []string, domain string) bool {
 		if d == domain {
 			return true
 		}
-		if regexp.MustCompile(d).MatchString(domain) {
-			return true
+		if len(d) > 2 && d[0] == '/' && d[len(d)-1] == '/' {
+			// Evaluate regexes provided like: /.*\.domain\.com$/
+			if regexp.MustCompile(d[1 : len(d)-1]).MatchString(domain) {
+				return true
+			}
 		}
 	}
 	return false

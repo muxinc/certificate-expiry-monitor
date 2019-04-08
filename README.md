@@ -17,7 +17,7 @@ Usage of ./certificate-expiry-monitor:
   -frequency duration
         Frequency at which the certificate expiry times are polled (default 1m0s)
   -ignoredDomains string
-        Comma-separated list of domains to exclude from the discovered set
+        Comma-separated list of domains to exclude from the discovered set. This can be a regex if the string is wrapped in forward-slashes like /.*\.domain\.com$/ which would exclude all domain.com subdomains.
   -ingressNamespaces string
         If provided, a comma-separated list of namespaces that will be searched for ingresses with domains to automatically query
   -insecure
