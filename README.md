@@ -14,9 +14,13 @@ Run the Docker image using the executable at `/app`:
 Usage of /app:
   -domains string
     	Comma-separated SNI domains to query
+  -ingressNamespaces string
+      If provided, a comma-separated list of namespaces that will be searched for ingresses with domains to automatically query
+  -ignoredDomains string
+      Comma-separated list of domains to exclude from the discovered set
   -frequency duration
     	Frequency at which the certificate expiry times are polled (default 1m0s)
-  -insecure
+  -insecure bool
     	If true, then the InsecureSkipVerify option will be used with the TLS connection, and the remote certificate and hostname will be trusted without verification (default true)
   -kubeconfig string
     	Path to kubeconfig file if running outside the Kubernetes cluster
@@ -78,11 +82,11 @@ spec:
         name: certificate-expiry-monitor
         resources:
           limits:
-            cpu: 200m
-            memory: 200Mi
+            cpu: 20m
+            memory: 50Mi
           requests:
-            cpu: 200m
-            memory: 200Mi
+            cpu: 20m
+            memory: 50Mi
 ```
 
 ## Monitoring

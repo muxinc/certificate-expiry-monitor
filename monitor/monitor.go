@@ -29,9 +29,20 @@ type CertExpiryMonitor struct {
 	PollingFrequency   time.Duration
 	Namespaces         []string
 	Labels             string
+	IngressNamespaces  []string
 	Domains            []string
+	IgnoredDomains     []string
 	Port               int
 	InsecureSkipVerify bool
+}
+
+func containsDomain(l []string, domain string) bool {
+	for _, d := range l {
+		if d == domain {
+			return true
+		}
+	}
+	return false
 }
 
 // Run the monitor until instructed to stop
@@ -43,16 +54,39 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 	listOptions := metav1.ListOptions{
 		LabelSelector: m.Labels,
 	}
-	api := m.KubernetesClient.CoreV1()
+	coreApi := m.KubernetesClient.CoreV1()
+	extApi := m.KubernetesClient.ExtensionsV1beta1()
 	ticker := time.NewTicker(m.PollingFrequency)
 
 	for {
 		m.Logger.Debug("Polling")
 
+		// discover domains from ingresses.
+		var discoveredDomains []string
+		for _, ns := range m.IngressNamespaces {
+			il, err := extApi.Ingresses(ns).List(metav1.ListOptions{})
+			if err != nil {
+				return err
+			}
+			for _, i := range il.Items {
+				for _, ir := range i.Spec.Rules {
+					if containsDomain(m.IgnoredDomains, ir.Host) {
+						m.Logger.WithField("ns", ns).Debugf("ignored host: %s", ir.Host)
+					} else if !containsDomain(discoveredDomains, ir.Host) {
+						m.Logger.WithField("ns", ns).Debugf("discovered host: %s", ir.Host)
+						discoveredDomains = append(discoveredDomains, ir.Host)
+					}
+				}
+			}
+		}
+		if len(discoveredDomains) > 0 {
+			m.Domains = discoveredDomains
+		}
+
 		// iterate over namespaces to monitor
 		for _, ns := range m.Namespaces {
 			// list pods matching the labels in this namespace
-			pods, err := api.Pods(ns).List(listOptions)
+			pods, err := coreApi.Pods(ns).List(listOptions)
 			if err != nil {
 				return err
 			}
