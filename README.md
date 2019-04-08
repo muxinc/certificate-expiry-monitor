@@ -11,28 +11,31 @@ docker build . -t muxinc/certificate-expiry-monitor:latest
 Run the Docker image using the executable at `/app`:
 ```
 → docker run muxinc/certificate-expiry-monitor:latest /app --help
-Usage of /app:
+Usage of ./certificate-expiry-monitor:
   -domains string
-    	Comma-separated SNI domains to query
+        Comma-separated SNI domains to query
   -frequency duration
-    	Frequency at which the certificate expiry times are polled (default 1m0s)
+        Frequency at which the certificate expiry times are polled (default 1m0s)
+  -ignoredDomains string
+        Comma-separated list of domains to exclude from the discovered set. This can be a regex if the string is wrapped in forward-slashes like /.*\.domain\.com$/ which would exclude all domain.com subdomains.
+  -ingressNamespaces string
+        If provided, a comma-separated list of namespaces that will be searched for ingresses with domains to automatically query
   -insecure
-    	If true, then the InsecureSkipVerify option will be used with the TLS connection, and the remote certificate and hostname will be trusted without verification (default true)
+        If true, then the InsecureSkipVerify option will be used with the TLS connection, and the remote certificate and hostname will be trusted without verification (default true)
   -kubeconfig string
-    	Path to kubeconfig file if running outside the Kubernetes cluster
+        Path to kubeconfig file if running outside the Kubernetes cluster
   -labels string
-    	Label selector that identifies pods to query
+        Label selector that identifies pods to query
   -logformat string
-    	Log format (text or json) (default "text")
+        Log format (text or json) (default "text")
   -loglevel string
-    	Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic) (default "error")
+        Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic) (default "error")
   -metricsPort int
-    	TCP port that the Prometheus metrics listener should use (default 8888)
+        TCP port that the Prometheus metrics listener should use (default 8888)
   -namespaces string
-    	Comma-separated Kubernetes namespaces to query (default "default")
+        Comma-separated Kubernetes namespaces to query (default "default")
   -port int
-    	TCP port to connect to each pod on (default 443)
-
+        TCP port to connect to each pod on (default 443)
 ```
 
 ### Kubernetes Manifest
@@ -78,11 +81,11 @@ spec:
         name: certificate-expiry-monitor
         resources:
           limits:
-            cpu: 200m
-            memory: 200Mi
+            cpu: 20m
+            memory: 50Mi
           requests:
-            cpu: 200m
-            memory: 200Mi
+            cpu: 20m
+            memory: 50Mi
 ```
 
 ## Monitoring

@@ -28,7 +28,9 @@ var (
 	pollingFrequency   = flag.Duration("frequency", time.Minute, "Frequency at which the certificate expiry times are polled")
 	namespaces         = flag.String("namespaces", "default", "Comma-separated Kubernetes namespaces to query")
 	labels             = flag.String("labels", "", "Label selector that identifies pods to query")
+	ingressNamespaces  = flag.String("ingressNamespaces", "", "If provided, a comma-separated list of namespaces that will be searched for ingresses with domains to automatically query")
 	domains            = flag.String("domains", "", "Comma-separated SNI domains to query")
+	ignoredDomains     = flag.String("ignoredDomains", "", "Comma-separated list of domains to exclude from the discovered set. This can be a regex if the string is wrapped in forward-slashes like /.*\\.domain\\.com$/ which would exclude all domain.com subdomains.")
 	port               = flag.Int("port", 443, "TCP port to connect to each pod on")
 	loglevel           = flag.String("loglevel", "error", "Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic)")
 	logFormat          = flag.String("logformat", "text", "Log format (text or json)")
@@ -60,7 +62,9 @@ func main() {
 		PollingFrequency:   *pollingFrequency,
 		Namespaces:         strings.Split(*namespaces, ","),
 		Labels:             *labels,
+		IngressNamespaces:  strings.Split(*ingressNamespaces, ","),
 		Domains:            strings.Split(*domains, ","),
+		IgnoredDomains:     strings.Split(*ignoredDomains, ","),
 		Port:               *port,
 		InsecureSkipVerify: *insecureSkipVerify,
 	}
