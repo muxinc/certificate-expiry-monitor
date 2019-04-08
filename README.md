@@ -1,4 +1,5 @@
-# certificate-expiry-monitor
+<img src="https://banner.mux.dev/?text=TLS%20Expiry%20Monitor" />
+
 Utility that exposes the expiry of TLS certificates as Prometheus metrics
 
 ## Building
