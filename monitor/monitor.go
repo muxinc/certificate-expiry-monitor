@@ -72,6 +72,9 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 		// discover domains from ingresses.
 		var discoveredDomains []string
 		for _, ns := range m.IngressNamespaces {
+			if ns == "" {
+				break
+			}
 			il, err := extApi.Ingresses(ns).List(metav1.ListOptions{})
 			if err != nil {
 				return err
