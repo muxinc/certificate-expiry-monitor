@@ -31,6 +31,7 @@ var (
 	ingressNamespaces  = flag.String("ingressNamespaces", "", "If provided, a comma-separated list of namespaces that will be searched for ingresses with domains to automatically query")
 	domains            = flag.String("domains", "", "Comma-separated SNI domains to query")
 	ignoredDomains     = flag.String("ignoredDomains", "", "Comma-separated list of domains to exclude from the discovered set. This can be a regex if the string is wrapped in forward-slashes like /.*\\.domain\\.com$/ which would exclude all domain.com subdomains.")
+	hostIP             = flag.Bool("hostIP", false, "If true, then connect to the host that the pod is running on rather than to the pod itself.")
 	port               = flag.Int("port", 443, "TCP port to connect to each pod on")
 	loglevel           = flag.String("loglevel", "error", "Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic)")
 	logFormat          = flag.String("logformat", "text", "Log format (text or json)")
@@ -65,6 +66,7 @@ func main() {
 		IngressNamespaces:  strings.Split(*ingressNamespaces, ","),
 		Domains:            strings.Split(*domains, ","),
 		IgnoredDomains:     strings.Split(*ignoredDomains, ","),
+		HostIP:             *hostIP,
 		Port:               *port,
 		InsecureSkipVerify: *insecureSkipVerify,
 	}

@@ -17,6 +17,8 @@ Usage of ./certificate-expiry-monitor:
         Comma-separated SNI domains to query
   -frequency duration
         Frequency at which the certificate expiry times are polled (default 1m0s)
+  -hostIP
+        If true, then connect to the host that the pod is running on rather than to the pod itself.
   -ignoredDomains string
         Comma-separated list of domains to exclude from the discovered set. This can be a regex if the string is wrapped in forward-slashes like /.*\.domain\.com$/ which would exclude all domain.com subdomains.
   -ingressNamespaces string

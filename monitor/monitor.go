@@ -33,6 +33,7 @@ type CertExpiryMonitor struct {
 	IngressNamespaces  []string
 	Domains            []string
 	IgnoredDomains     []string
+	HostIP             bool
 	Port               int
 	InsecureSkipVerify bool
 }
@@ -103,7 +104,11 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 			m.Logger.WithField("ns", ns).Debugf("Number of matching pods found in namespace: %d", len(pods.Items))
 			podsWG := &sync.WaitGroup{}
 			for _, pod := range pods.Items {
-				go m.checkCertificates(podsWG, ns, pod.Name, pod.Status.HostIP)
+				ip := pod.Status.PodIP
+				if m.HostIP {
+					ip = pod.Status.HostIP
+				}
+				go m.checkCertificates(podsWG, ns, pod.Name, ip)
 			}
 			podsWG.Wait()
 		}
