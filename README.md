@@ -1,6 +1,6 @@
 <img src="https://banner.mux.dev/?text=TLS%20Expiry%20Monitor" />
 
-Utility that exposes the expiry of TLS certificates as Prometheus metrics
+Utility that exposes the expiry of TLS certificates as Prometheus metrics.
 
 ## Building
 To build the Docker image, simply run `docker build`:
@@ -13,6 +13,10 @@ Run the Docker image using the executable at `/app`:
 ```
 → docker run muxinc/certificate-expiry-monitor:latest /app --help
 Usage of ./certificate-expiry-monitor:
+  -dial_target_addr string
+        If provided, dials this address directly rather than resolving pods
+  -dial_target_name string
+        Must be provided if dial_target_addr is set, identifies the explicitly configured target in the monitoring labels (still uses the pod label).
   -domains string
         Comma-separated SNI domains to query
   -frequency duration

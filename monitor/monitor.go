@@ -34,6 +34,8 @@ type CertExpiryMonitor struct {
 	Domains            []string
 	IgnoredDomains     []string
 	HostIP             bool
+	DialTargetAddr     string
+	DialTargetName     string
 	Port               int
 	InsecureSkipVerify bool
 }
@@ -92,6 +94,10 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 		}
 		if len(discoveredDomains) > 0 {
 			m.Domains = discoveredDomains
+		}
+
+		if len(m.DialTargetAddr) > 0 {
+			m.checkCertificates(&sync.WaitGroup{}, "DialTarget", m.DialTargetName, m.DialTargetAddr)
 		}
 
 		// iterate over namespaces to monitor
