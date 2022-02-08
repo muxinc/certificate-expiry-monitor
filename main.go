@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/muxinc/certificate-expiry-monitor/monitor"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -25,6 +25,7 @@ import (
 
 var (
 	kubeconfigPath     = flag.String("kubeconfig", "", "Path to kubeconfig file if running outside the Kubernetes cluster")
+	kubeContext        = flag.String("context", "", "The name of the kubeconfig context to use if running outside the Kubernetes cluster")
 	pollingFrequency   = flag.Duration("frequency", time.Minute, "Frequency at which the certificate expiry times are polled")
 	namespaces         = flag.String("namespaces", "default", "Comma-separated Kubernetes namespaces to query")
 	labels             = flag.String("labels", "", "Label selector that identifies pods to query")
@@ -37,6 +38,7 @@ var (
 	logFormat          = flag.String("logformat", "text", "Log format (text or json)")
 	metricsPort        = flag.Int("metricsPort", 8888, "TCP port that the Prometheus metrics listener should use")
 	insecureSkipVerify = flag.Bool("insecure", true, "If true, then the InsecureSkipVerify option will be used with the TLS connection, and the remote certificate and hostname will be trusted without verification")
+	ingressAPIVersion  = flag.String("ingressAPIVersion", "extensions/v1beta1", "Version of the Ingress API to use, can be either `extensions/v1beta1` or `networking/v1`")
 )
 
 func main() {
@@ -51,7 +53,7 @@ func main() {
 	runHTTPListener(logger, hh)
 
 	// create Kubernetes client
-	kubeClient, err := newClientSet(*kubeconfigPath)
+	kubeClient, err := newClientSet(*kubeconfigPath, *kubeContext)
 	if err != nil {
 		log.Fatalf("Error creating Kubernetes client, exiting: %v", err)
 	}
@@ -69,6 +71,7 @@ func main() {
 		HostIP:             *hostIP,
 		Port:               *port,
 		InsecureSkipVerify: *insecureSkipVerify,
+		IngressAPIVersion:  *ingressAPIVersion,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -80,19 +83,17 @@ func main() {
 	// trap signals to terminate
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-sig:
-		logger.Info("Received termination signal, shutting down")
-		cancel()
-		wg.Wait()
-		logger.Info("Shutdown finished, exiting")
-	}
+	<-sig
+	logger.Info("Received termination signal, shutting down")
+	cancel()
+	wg.Wait()
+	logger.Info("Shutdown finished, exiting")
 }
 
 func runHTTPListener(logger *logrus.Logger, hh *healthHandler) {
 	m := http.NewServeMux()
 	m.Handle("/healthz", hh)
-	m.Handle("/metrics", prometheus.Handler())
+	m.Handle("/metrics", promhttp.Handler())
 	logger.Infof("Starting Prometheus metrics endpoint on :%d", *metricsPort)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *metricsPort))
 	if err != nil {
@@ -141,14 +142,20 @@ func newLogger(level, format string) *logrus.Logger {
 // Create new Kubernetes's clientSet.
 // When configured env.KubeconfigPath, read config from env.KubeconfigPath.
 // When not configured env.KubeconfigPath, read internal cluster config.
-func newClientSet(kubeconfigPath string) (*kubernetes.Clientset, error) {
+func newClientSet(kubeconfigPath string, kubeContext string) (*kubernetes.Clientset, error) {
 	var err error
 	var config *rest.Config
 
 	if kubeconfigPath == "" {
 		config, err = rest.InClusterConfig()
 	} else {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		configOverrides := &clientcmd.ConfigOverrides{}
+		if kubeContext != "" {
+			configOverrides.CurrentContext = kubeContext
+		}
+		config, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
+			configOverrides).ClientConfig()
 	}
 	if err != nil {
 		return nil, err

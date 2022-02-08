@@ -36,6 +36,7 @@ type CertExpiryMonitor struct {
 	HostIP             bool
 	Port               int
 	InsecureSkipVerify bool
+	IngressAPIVersion  string
 }
 
 func containsDomain(l []string, domain string) bool {
@@ -54,7 +55,7 @@ func containsDomain(l []string, domain string) bool {
 }
 
 // Run the monitor until instructed to stop
-func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
+func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -64,6 +65,7 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 	}
 	coreApi := m.KubernetesClient.CoreV1()
 	extApi := m.KubernetesClient.ExtensionsV1beta1()
+	netApi := m.KubernetesClient.NetworkingV1()
 	ticker := time.NewTicker(m.PollingFrequency)
 
 	for {
@@ -72,24 +74,48 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 		// discover domains from ingresses.
 		var discoveredDomains []string
 		for _, ns := range m.IngressNamespaces {
+			var possibleDomains []string
 			if ns == "" {
 				break
 			}
-			il, err := extApi.Ingresses(ns).List(metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-			for _, i := range il.Items {
-				for _, ir := range i.Spec.Rules {
-					if containsDomain(m.IgnoredDomains, ir.Host) {
-						m.Logger.WithField("ns", ns).Debugf("ignored host: %s", ir.Host)
-					} else if !containsDomain(discoveredDomains, ir.Host) {
-						m.Logger.WithField("ns", ns).Debugf("discovered host: %s", ir.Host)
-						discoveredDomains = append(discoveredDomains, ir.Host)
+			switch m.IngressAPIVersion {
+			case "extensions/v1beta1":
+				il, err := extApi.Ingresses(ns).List(ctx, metav1.ListOptions{})
+				if err != nil {
+					m.Logger.WithField("ns", ns).Errorf("Failed to list ingresses using ExtensionsV1beta1: %v", err)
+					return
+				}
+				for _, i := range il.Items {
+					for _, ir := range i.Spec.Rules {
+						possibleDomains = append(possibleDomains, ir.Host)
 					}
+				}
+			case "networking/v1":
+				il, err := netApi.Ingresses(ns).List(ctx, metav1.ListOptions{})
+				if err != nil {
+					m.Logger.WithField("ns", ns).Errorf("Failed to list ingresses using ExtensionsV1beta1: %v", err)
+					return
+				}
+				for _, i := range il.Items {
+					for _, ir := range i.Spec.Rules {
+						possibleDomains = append(possibleDomains, ir.Host)
+					}
+				}
+			default:
+				m.Logger.WithField("ns", ns).Errorf("Invalid ingress API version provided, got %s but has to be either `extensions/v1beta1` or `networking/v1`", m.IngressAPIVersion)
+				return
+			}
+
+			for _, possibleDomain := range possibleDomains {
+				if containsDomain(m.IgnoredDomains, possibleDomain) {
+					m.Logger.WithField("ns", ns).Debugf("ignored host: %s", possibleDomain)
+				} else if !containsDomain(discoveredDomains, possibleDomain) {
+					m.Logger.WithField("ns", ns).Debugf("discovered host: %s", possibleDomain)
+					discoveredDomains = append(discoveredDomains, possibleDomain)
 				}
 			}
 		}
+
 		if len(discoveredDomains) > 0 {
 			m.Domains = discoveredDomains
 		}
@@ -97,9 +123,10 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 		// iterate over namespaces to monitor
 		for _, ns := range m.Namespaces {
 			// list pods matching the labels in this namespace
-			pods, err := coreApi.Pods(ns).List(listOptions)
+			pods, err := coreApi.Pods(ns).List(ctx, listOptions)
 			if err != nil {
-				return err
+				m.Logger.WithField("ns", ns).Errorf("Failed to list pods using NetworkingV1: %v", err)
+				return
 			}
 
 			// iterate over matching pods in namespace
@@ -120,7 +147,7 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) error {
 		case <-ticker.C:
 		case <-ctx.Done():
 			m.Logger.Info("Monitor stopping")
-			return nil
+			return
 		}
 	}
 }
