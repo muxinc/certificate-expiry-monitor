@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/muxinc/certificate-expiry-monitor/monitor"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -75,6 +75,8 @@ func main() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
 	go monitor.Run(ctx, wg)
 
 	// switch to healthy
