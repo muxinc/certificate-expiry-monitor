@@ -129,7 +129,7 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
 			// list pods matching the labels in this namespace
 			pods, err := coreApi.Pods(ns).List(ctx, listOptions)
 			if err != nil {
-				m.Logger.WithField("ns", ns).Errorf("Failed to list pods using NetworkingV1: %v", err)
+				m.Logger.WithField("ns", ns).Errorf("Failed to list pods: %v", err)
 				continue
 			}
 
