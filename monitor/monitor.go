@@ -98,7 +98,7 @@ func (m *CertExpiryMonitor) Run(ctx context.Context, wg *sync.WaitGroup) {
 			case "networking/v1":
 				il, err := netApi.Ingresses(ns).List(ctx, metav1.ListOptions{})
 				if err != nil {
-					m.Logger.WithField("ns", ns).Errorf("Failed to list ingresses using ExtensionsV1beta1: %v", err)
+					m.Logger.WithField("ns", ns).Errorf("Failed to list ingresses using NetworkingV1: %v", err)
 					continue
 				}
 				for _, i := range il.Items {
