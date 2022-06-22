@@ -33,6 +33,8 @@ var (
 	domains            = flag.String("domains", "", "Comma-separated SNI domains to query")
 	ignoredDomains     = flag.String("ignoredDomains", "", "Comma-separated list of domains to exclude from the discovered set. This can be a regex if the string is wrapped in forward-slashes like /.*\\.domain\\.com$/ which would exclude all domain.com subdomains.")
 	hostIP             = flag.Bool("hostIP", false, "If true, then connect to the host that the pod is running on rather than to the pod itself.")
+	dialTargetAddr     = flag.String("dial_target_addr", "", "If provided, dials this address directly rather than resolving pods")
+	dialTargetName     = flag.String("dial_target_name", "", "Must be provided if dial_target_addr is set, identifies the explicitly configured target in the monitoring labels (still uses the pod label).")
 	port               = flag.Int("port", 443, "TCP port to connect to each pod on")
 	loglevel           = flag.String("loglevel", "error", "Log-level threshold for logging messages (debug, info, warn, error, fatal, or panic)")
 	logFormat          = flag.String("logformat", "text", "Log format (text or json)")
@@ -58,6 +60,10 @@ func main() {
 		log.Fatalf("Error creating Kubernetes client, exiting: %v", err)
 	}
 
+	if len(*dialTargetAddr) > 0 && len(*dialTargetName) == 0 {
+		log.Fatalf("got a dial target address but not a name. must set -dial_target_name")
+	}
+
 	// start monitor
 	monitor := &monitor.CertExpiryMonitor{
 		Logger:             logger,
@@ -69,6 +75,8 @@ func main() {
 		Domains:            strings.Split(*domains, ","),
 		IgnoredDomains:     strings.Split(*ignoredDomains, ","),
 		HostIP:             *hostIP,
+		DialTargetAddr:     *dialTargetAddr,
+		DialTargetName:     *dialTargetName,
 		Port:               *port,
 		InsecureSkipVerify: *insecureSkipVerify,
 		IngressAPIVersion:  *ingressAPIVersion,
